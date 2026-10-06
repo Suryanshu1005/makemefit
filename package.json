@@ -1,0 +1,17 @@
+{
+  "name": "makemefit",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter @makemefit/* dev",
+    "dev:api": "pnpm --filter @makemefit/api dev",
+    "dev:web": "pnpm --filter @makemefit/web dev",
+    "build": "pnpm --recursive --filter @makemefit/* run build",
+    "typecheck": "pnpm --recursive --filter @makemefit/* run typecheck",
+    "lint": "pnpm --recursive --filter @makemefit/* run lint",
+    "test": "pnpm --recursive --filter @makemefit/* run test"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

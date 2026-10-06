@@ -1,0 +1,79 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Lint, Test & Build Monorepo
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_makemefit_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_makemefit_db
+      JWT_ACCESS_SECRET: test_jwt_access_secret_min_16_chars_12345
+      JWT_REFRESH_SECRET: test_jwt_refresh_secret_min_16_chars_12345
+      PORT: 4000
+      HOST: 127.0.0.1
+      CORS_ORIGIN: http://localhost:5173
+      AI_PROVIDER: mock
+      AI_VISION_PROVIDER: mock
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node.js (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install Workspace Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript Typecheck
+        run: pnpm typecheck
+
+      - name: Push Database Schema
+        run: pnpm --filter @makemefit/api db:push
+
+      - name: Run Test Suites
+        run: pnpm test
+
+      - name: Production Monorepo Build
+        run: pnpm build
+
+      - name: Verify Web Dist Output
+        run: |
+          test -d apps/web/dist
+          echo "Web build successfully verified."

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: makemefit-prod-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-makemefit_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-makemefit_password}
+      POSTGRES_DB: ${POSTGRES_DB:-makemefit_db}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-makemefit_user} -d ${POSTGRES_DB:-makemefit_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - makemefit-network
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: makemefit-prod-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgres://${POSTGRES_USER:-makemefit_user}:${POSTGRES_PASSWORD:-makemefit_password}@postgres:5432/${POSTGRES_DB:-makemefit_db}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-prod_jwt_access_secret_makemefit_min_16_chars}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-prod_jwt_refresh_secret_makemefit_min_16_chars}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_VISION_PROVIDER: ${AI_VISION_PROVIDER:-mock}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - makemefit-network
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    container_name: makemefit-prod-web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - makemefit-network
+
+volumes:
+  postgres_prod_data:
+
+networks:
+  makemefit-network:
+    driver: bridge
