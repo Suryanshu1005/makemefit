@@ -33,7 +33,17 @@ export async function buildServer() {
       if (!origin) return cb(null, true);
       // In development allow localhost origins
       if (env.NODE_ENV === 'development') return cb(null, true);
-      if (origin === env.CORS_ORIGIN) return cb(null, true);
+
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      const allowedOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim().replace(/\/+$/, ''));
+
+      if (
+        allowedOrigins.includes('*') ||
+        allowedOrigins.includes(normalizedOrigin) ||
+        normalizedOrigin.endsWith('.vercel.app')
+      ) {
+        return cb(null, true);
+      }
       cb(new Error('Not allowed by CORS'), false);
     },
     credentials: true,
