@@ -13,7 +13,7 @@ import {
   LayoutDashboard,
   User as UserIcon,
 } from 'lucide-react';
-import { apiRequest } from './api/client';
+import { apiRequest, API_ORIGIN } from './api/client';
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { ProfilePage } from './components/profile/ProfilePage';
 import { PrimaryDashboard } from './components/dashboard/PrimaryDashboard';
@@ -32,7 +32,7 @@ export function App() {
 
   // Health check verification
   useEffect(() => {
-    apiRequest<{ status: string; database: string }>('http://localhost:4000/health')
+    apiRequest<{ status: string; database: string }>(`${API_ORIGIN || ''}/health`)
       .then((res) => {
         setHealthStatus(res.status === 'healthy' ? 'healthy' : `db: ${res.database}`);
       })

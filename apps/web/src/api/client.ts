@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api/v1';
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api/v1').replace(/\/+$/, '');
+export const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1$/, '');
 
 export class ApiError extends Error {
   public code: string;
@@ -28,7 +29,10 @@ export async function apiRequest<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  const url =
+    endpoint.startsWith('http') || endpoint === '/health'
+      ? endpoint
+      : `${API_BASE_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
