@@ -4,10 +4,17 @@ import { env } from '../config/env';
 import { logger } from '../core/logger';
 import * as schema from './schema';
 
-const client = postgres(env.DATABASE_URL, {
+const connectionString = process.env.DATABASE_PUBLIC_URL || env.DATABASE_URL;
+const isLocalDatabase =
+  connectionString.includes('localhost') ||
+  connectionString.includes('127.0.0.1') ||
+  connectionString.includes('@postgres:');
+
+const client = postgres(connectionString, {
   max: 10,
   idle_timeout: 20,
   connect_timeout: 10,
+  ssl: isLocalDatabase ? false : 'prefer',
   onnotice: () => {}, // suppress notice messages
 });
 
