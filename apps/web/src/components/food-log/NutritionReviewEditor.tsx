@@ -502,12 +502,12 @@ export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
                   onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
                   className="p-3 flex items-center justify-between gap-3 cursor-pointer select-none"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <span className="h-6 w-6 rounded-lg bg-obsidian-input flex items-center justify-center text-xs text-slate-400 shrink-0 font-bold">
                       {index + 1}
                     </span>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
                         <span className="font-bold text-sm text-slate-100 truncate">
                           {item.name}
                         </span>

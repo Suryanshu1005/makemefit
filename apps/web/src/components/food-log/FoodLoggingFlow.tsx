@@ -786,7 +786,7 @@ export const FoodLoggingFlow: React.FC<FoodLoggingFlowProps> = ({
                     type="button"
                     variant="primary"
                     size="md"
-                    onClick={handleRetryAnalysis}
+                    onClick={() => handleRetryAnalysis()}
                     className="gap-2 shadow-glow-kinetic"
                   >
                     <RefreshCw className="h-4 w-4" />
