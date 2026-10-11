@@ -38,7 +38,8 @@ interface NutritionReviewEditorProps {
   imageUrl?: string;
   onCancel: () => void;
   onSuccess: (response: MealConfirmResponse) => void;
-  onRetryAnalysis?: () => void;
+  onRetryAnalysis?: (updatedNotes?: string) => void;
+  initialUserNotes?: string;
 }
 
 export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
@@ -52,12 +53,13 @@ export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
   onCancel,
   onSuccess,
   onRetryAnalysis,
+  initialUserNotes = '',
 }) => {
   // Form State
   const [dishName, setDishName] = useState(initialDishName);
   const [mealSlot, setMealSlot] = useState<MealSlot>(initialMealSlot);
   const [items, setItems] = useState<EditableFoodItem[]>(initialItems);
-  const [userNotes, setUserNotes] = useState('');
+  const [userNotes, setUserNotes] = useState(initialUserNotes);
 
   // UI state
   const [expandedItemId, setExpandedItemId] = useState<string | null>(items[0]?.id || null);
@@ -107,12 +109,20 @@ export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
     });
   }, [dishName, initialDishName, items, initialItems]);
 
-  // Update specific field on an item
+  // Update specific field on an item (auto-recalculates Atwater calories when macros change)
   const updateItemField = (id: string, field: keyof EditableFoodItem, value: any) => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const updated = { ...item, [field]: value };
+        const updated: EditableFoodItem = { ...item, [field]: value };
+
+        // If user edited proteinG, carbsG, or fatG, automatically sync calories using Atwater (4P + 4C + 9F)
+        if (field === 'proteinG' || field === 'carbsG' || field === 'fatG') {
+          updated.calories = Math.max(
+            0,
+            Math.round(updated.proteinG * 4 + updated.carbsG * 4 + updated.fatG * 9)
+          );
+        }
 
         // Check if modified against original AI snapshot
         if (item.originalAiItemData) {
@@ -730,6 +740,14 @@ export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
                       </div>
                     </div>
 
+                    {/* AI Preparation / Oil & Sweetness Note */}
+                    {item.notes && (
+                      <div className="px-2.5 py-1.5 rounded-lg bg-obsidian-elevated/60 border border-obsidian-border/60 text-[11px] text-slate-300 flex items-center gap-1.5">
+                        <Sparkles className="h-3 w-3 text-kinetic shrink-0" />
+                        <span>{item.notes}</span>
+                      </div>
+                    )}
+
                     {/* Item Action Row */}
                     <div className="flex items-center justify-between pt-1 border-t border-obsidian-border/40 text-xs">
                       <span className="text-[10px] text-slate-500">
@@ -763,16 +781,39 @@ export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
         </div>
       </div>
 
-      {/* Optional User Notes */}
-      <div className="flex flex-col gap-1">
+      {/* Optional User Notes & Quick Oil/Sweetness Context Chips */}
+      <div className="flex flex-col gap-2">
         <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-          Meal Notes / Context <span className="text-slate-500 font-normal">(Optional)</span>
+          Cooking Oil, Sweetness & Preparation Notes <span className="text-slate-500 font-normal">(Used for Re-analysis)</span>
         </label>
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            'Home-cooked (low oil ~1 tsp)',
+            'Restaurant style (rich oil/butter)',
+            'Steamed / Air-fried (0g added oil)',
+            '+1 tbsp Desi Ghee / Butter',
+            'Unsweetened / No added sugar',
+            'Extra sweet / sugar syrup',
+          ].map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() =>
+                setUserNotes((prev) =>
+                  prev.includes(preset) ? prev : prev ? `${prev}, ${preset}` : preset
+                )
+              }
+              className="px-2.5 py-1 rounded-lg bg-obsidian-elevated border border-obsidian-border hover:border-kinetic/50 text-[11px] text-slate-300 hover:text-kinetic transition-all"
+            >
+              + {preset}
+            </button>
+          ))}
+        </div>
         <input
           type="text"
           value={userNotes}
           onChange={(e) => setUserNotes(e.target.value)}
-          placeholder="e.g. Left out cheese, added 1 tbsp olive oil"
+          placeholder="e.g. Cooked in 1 tsp olive oil, no sugar in tea, or restaurant gravy with butter"
           className="bg-obsidian-input border border-obsidian-border rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-kinetic"
         />
       </div>
@@ -803,7 +844,7 @@ export const NutritionReviewEditor: React.FC<NutritionReviewEditorProps> = ({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={onRetryAnalysis}
+              onClick={() => onRetryAnalysis(userNotes)}
               className="gap-1.5 text-xs text-slate-400 hover:text-slate-100"
             >
               <RotateCcw className="h-3.5 w-3.5" />

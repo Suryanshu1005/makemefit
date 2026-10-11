@@ -230,10 +230,15 @@ export const FoodLoggingFlow: React.FC<FoodLoggingFlowProps> = ({
   };
 
   // Retry analysis
-  const handleRetryAnalysis = async () => {
+  const handleRetryAnalysis = async (updatedNotes?: string) => {
     if (!uploadResult) {
       if (selectedFile) return handleSubmitUpload();
       return;
+    }
+
+    const effectiveNotes = typeof updatedNotes === 'string' ? updatedNotes : mealNotes;
+    if (typeof updatedNotes === 'string') {
+      setMealNotes(updatedNotes);
     }
 
     setStep('analyzing');
@@ -245,7 +250,7 @@ export const FoodLoggingFlow: React.FC<FoodLoggingFlowProps> = ({
         `/food-logs/uploads/${uploadResult.id}/retry-analysis`,
         {
           method: 'POST',
-          body: JSON.stringify({ userNotes: mealNotes || undefined }),
+          body: JSON.stringify({ userNotes: effectiveNotes.trim() || undefined }),
         }
       );
 
@@ -607,6 +612,7 @@ export const FoodLoggingFlow: React.FC<FoodLoggingFlowProps> = ({
                 originalAiTotals={reviewData.originalAiTotals}
                 uncertaintyNotes={reviewData.uncertaintyNotes}
                 imageUrl={previewUrl || undefined}
+                initialUserNotes={mealNotes}
                 onCancel={handleClose}
                 onRetryAnalysis={handleRetryAnalysis}
                 onSuccess={(response) => {
